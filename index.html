@@ -6,14 +6,14 @@
 <title>コールアウト・ジェネレーター</title>
 <style>
   :root{
-    --bg: #14161c;
-    --panel: #1b1e27;
-    --panel-2: #21242f;
-    --line: #2a2e3a;
-    --ink: #eef0f5;
-    --ink-dim: #8b93a7;
-    --accent: #7c93f5;
-    --accent-dim: #4a5580;
+    --bg: #ffffff;
+    --panel: #f7f8fa;
+    --panel-2: #ffffff;
+    --line: #e3e6ec;
+    --ink: #181a20;
+    --ink-dim: #767c8c;
+    --accent: #4f66d6;
+    --accent-dim: #e4e8fb;
     --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
   }
 
@@ -234,6 +234,42 @@
   .copy-btn:hover{ background: var(--accent); }
   .copy-btn:active{ transform: translateY(1px); }
 
+  .export-row{
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+  }
+  .copy-btn.primary{
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #10131c;
+    font-weight: 700;
+  }
+  .copy-btn.primary:hover{ background: #93a6f8; }
+  .export-row .copy-btn:not(.primary){
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .steps-title{
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .inline-steps{
+    margin: 12px 0 0;
+    padding-left: 18px;
+    color: var(--ink-dim);
+    font-size: 12.5px;
+    line-height: 2;
+  }
+  .inline-steps b{ color: var(--ink); }
+
   textarea#codeOut{
     width:100%;
     height: 150px;
@@ -267,7 +303,7 @@
 <div class="wrap">
   <header>
     <h1>コールアウト・ジェネレーター</h1>
-    <p>色・アイコン・文章を決めると、右側にNotion風コールアウトのプレビューと埋め込み用コードが出てくるよ。<br>コードをGitHub Pagesに置いて、Notionの「埋め込み」ブロックにURLを貼れば完成。</p>
+    <p>色・アイコン・文章を決めると、右側にNotion風コールアウトのプレビューが出てくるよ。<br>「HTMLファイルをダウンロード」してNotionのHTMLブロックにアップロードするだけで表示できる。画像として貼りたい場合はPNG保存も選べるよ。</p>
   </header>
 
   <div class="grid">
@@ -319,7 +355,7 @@
       <p class="section-title">内容</p>
       <div class="row">
         <label>アイコン</label>
-        <input type="text" id="iconInput" value="💡" maxlength="4">
+        <input type="text" id="iconInput" value="💡" maxlength="4" placeholder="空欄でアイコンなし">
       </div>
       <div class="row">
         <label>見出し</label>
@@ -342,21 +378,26 @@
           </div>
         </div>
 
-        <div class="code-block">
-          <div class="code-block-head">
-            <span>埋め込み用コード（GitHub Pages用HTML）</span>
-            <button class="copy-btn" id="copyBtn">コピー</button>
-          </div>
-          <textarea id="codeOut" readonly></textarea>
+        <div class="export-row">
+          <button class="copy-btn primary" id="downloadHtmlBtn">HTMLファイルをダウンロード</button>
+          <button class="copy-btn" id="downloadPngBtn">画像として保存（PNG）</button>
         </div>
 
         <div class="steps">
+          <p class="steps-title">Notionでの使い方（HTMLブロック）</p>
           <ol>
-            <li>上のコードを丸ごとコピーして、<b>index.html</b> として保存</li>
-            <li>GitHubリポジトリにpush → <b>Settings → Pages</b> で公開</li>
-            <li>公開されたURLをコピー</li>
-            <li>Notionで <b>/埋め込み</b>（Embed）ブロックを追加してURLを貼り付け</li>
+            <li>上の「HTMLファイルをダウンロード」でファイルを保存</li>
+            <li>Notionのページで <b>/html</b> と入力してHTMLブロックを追加</li>
+            <li>「アップロード」からダウンロードしたファイルを選ぶと、そのままページ内に表示される</li>
           </ol>
+        </div>
+
+        <div class="code-block">
+          <div class="code-block-head">
+            <span>コードを直接見る・コピーする</span>
+            <button class="copy-btn" id="copyBtn">コピー</button>
+          </div>
+          <textarea id="codeOut" readonly></textarea>
         </div>
       </div>
     </div>
@@ -416,7 +457,7 @@ function render(){
   const bw = $("borderWidth").value;
   const radius = $("radius").value;
   const pad = $("padding").value;
-  const icon = $("iconInput").value || "💡";
+  const icon = $("iconInput").value;
   const title = $("titleInput").value;
   const body = $("bodyInput").value;
 
@@ -431,7 +472,14 @@ function render(){
   preview.style.borderRadius = radius + "px";
   preview.style.padding = pad + "px";
 
-  $("pIcon").textContent = icon;
+  const pIcon = $("pIcon");
+  if(icon){
+    pIcon.textContent = icon;
+    pIcon.style.display = "";
+  }else{
+    pIcon.textContent = "";
+    pIcon.style.display = "none";
+  }
   $("pTitle").textContent = title;
   $("pBody").textContent = body;
 
@@ -463,7 +511,7 @@ function render(){
 </head>
 <body>
   <div class="callout">
-    <div class="icon">${icon}</div>
+    ${icon ? `<div class="icon">${esc(icon)}</div>` : ""}
     <div>
       <b>${esc(title)}</b>
       <p>${esc(body)}</p>
@@ -482,6 +530,78 @@ $("copyBtn").addEventListener("click", ()=>{
   const original = btn.textContent;
   btn.textContent = "コピーしたよ";
   setTimeout(()=>{ btn.textContent = original; }, 1400);
+});
+
+function downloadPNG(){
+  const node = $("calloutPreview");
+  const rect = node.getBoundingClientRect();
+  const width = Math.max(1, Math.ceil(rect.width));
+  const height = Math.max(1, Math.ceil(rect.height));
+
+  const clone = node.cloneNode(true);
+  clone.removeAttribute("id");
+  clone.style.display = "flex";
+  clone.style.gap = "12px";
+  clone.style.alignItems = "flex-start";
+  clone.style.boxSizing = "border-box";
+  clone.style.width = width + "px";
+  clone.style.fontFamily = getComputedStyle(node).fontFamily;
+  clone.style.margin = "0";
+
+  const iconEl = clone.querySelector(".icon");
+  if(iconEl){
+    iconEl.style.fontSize = "20px";
+    iconEl.style.lineHeight = "1";
+    iconEl.style.flexShrink = "0";
+  }
+  const bEl = clone.querySelector("b");
+  if(bEl){ bEl.style.display = "block"; bEl.style.marginBottom = "4px"; }
+  const pEl = clone.querySelector("p");
+  if(pEl){ pEl.style.margin = "0"; pEl.style.lineHeight = "1.7"; pEl.style.opacity = "0.92"; }
+
+  const serializer = new XMLSerializer();
+  const cloneHtml = serializer.serializeToString(clone);
+
+  const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+    <foreignObject width="100%" height="100%" xmlns="http://www.w3.org/1999/xhtml">
+      ${cloneHtml}
+    </foreignObject>
+  </svg>`;
+
+  const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+  const img = new Image();
+  img.onload = () => {
+    const scale = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, 0, 0, width, height);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(blob => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "callout.png";
+      a.click();
+    });
+  };
+  img.onerror = () => {
+    alert("画像の生成に失敗しちゃいました…もう一度試してみて");
+  };
+  img.src = url;
+}
+
+$("downloadPngBtn").addEventListener("click", downloadPNG);
+
+$("downloadHtmlBtn").addEventListener("click", ()=>{
+  const code = $("codeOut").value;
+  const blob = new Blob([code], { type: "text/html;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "callout.html";
+  a.click();
 });
 
 render();
